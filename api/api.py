@@ -10,7 +10,7 @@ import base64
 import uuid
 from pathlib import Path
 
-from .shopping_agent import (
+from app.shopping_agent import (
     initialize_agent
 )
 
