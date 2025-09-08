@@ -14,12 +14,12 @@ from tqdm import tqdm
 import time
 from dotenv import load_dotenv
 
-# Vector database and embedding imports
+# vector database and embedding imports
 from langchain_milvus import Milvus
 from sentence_transformers import SentenceTransformer
 from langchain_core.embeddings import Embeddings
 
-# Load environment variables
+# load environment variables
 load_dotenv()
 
 class LocalSentenceTransformerEmbeddings(Embeddings):
@@ -46,10 +46,10 @@ class AmazonVectorDBBuilder:
         if not self.zilliz_uri or not self.zilliz_token:
             raise ValueError("ZILLIZ_URI and ZILLIZ_TOKEN must be set in environment variables")
         
-        # Initialize embedding model
+        # initialize embedding model
         self.embeddings = LocalSentenceTransformerEmbeddings()
         
-        # Collection names
+        # collection names
         self.text_collection_name = "palona_text"
         self.image_collection_name = "palona_image"
         
@@ -60,22 +60,22 @@ class AmazonVectorDBBuilder:
     def load_data(self, data_dir: str = "data/") -> tuple[pd.DataFrame, pd.DataFrame]:
         print("Loading Amazon product data...")
         
-        # Load categories
+        # load categories
         categories_path = os.path.join(data_dir, "amazon_categories.csv")
         categories_df = pd.read_csv(categories_path)
         print(f"Loaded {len(categories_df)} categories")
         
-        # Load products in chunks for memory efficiency
+        # load products in chunks for memory efficiency
         products_path = os.path.join(data_dir, "amazon_products.csv")
         print(f"Loading products from {products_path}...")
         
-        # Read products CSV - handle large file
+        # read products csv - handle large file
         try:
             products_df = pd.read_csv(products_path)
             print(f"Loaded {len(products_df)} products")
         except Exception as e:
             print(f"Error loading products: {e}")
-            # Try reading in chunks if file is too large
+            # try reading in chunks if file is too large
             print("Attempting to read in chunks...")
             chunks = []
             chunk_size = 10000
@@ -91,20 +91,20 @@ class AmazonVectorDBBuilder:
     def process_products(self, products_df: pd.DataFrame, categories_df: pd.DataFrame) -> List[Dict[str, Any]]:
         print("Processing product data...")
         
-        # Create category lookup
+        # create category lookup
         category_lookup = dict(zip(categories_df['id'], categories_df['category_name']))
         
         processed_products = []
         
         for idx, row in tqdm(products_df.iterrows(), total=len(products_df), desc="Processing products"):
             try:
-                # Get category name
+                # get category name
                 category_name = category_lookup.get(row['category_id'], 'Unknown Category')
                 
-                # Create rich text for embedding (title + category + price info)
+                # create rich text for embedding (title + category + price info)
                 price_text = f"${row['price']}" if pd.notna(row['price']) and row['price'] > 0 else "Price not available"
                 
-                # Combine information for better search
+                # combine information for better search
                 combined_text = f"{row['title']} | Category: {category_name} | Price: {price_text}"
                 
                 # Add rating info if available

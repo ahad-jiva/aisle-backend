@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
@@ -15,7 +15,7 @@ def main():
     print("  Amazon Vector Database Builder")
     print("=" * 40)
     
-    # Check if data exists
+    # check if data exists
     if not os.path.exists("data/amazon_products.csv"):
         print(" Missing data/amazon_products.csv")
         print("Please ensure your Amazon dataset is in the data/ folder")
@@ -26,7 +26,7 @@ def main():
         print("Please ensure your Amazon dataset is in the data/ folder")
         sys.exit(1)
     
-    # Import and run the vector database builder
+    # import and run the vector database builder
     try:
         from app.vectordb_text import AmazonVectorDBBuilder
         builder = AmazonVectorDBBuilder()

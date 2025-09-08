@@ -8,11 +8,11 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
-# Load environment
+# load environment
 load_dotenv()
 
 def test_smart_ranking():
@@ -24,12 +24,12 @@ def test_smart_ranking():
         print(" Testing smart Ranking Algorithm")
         print("-" * 50)
         
-        # Create test documents with different characteristics
+        # create test documents with different characteristics
         class MockDoc:
             def __init__(self, **metadata):
                 self.metadata = metadata
         
-        # Test case 1: High-rated bestseller with high sales
+        # test case 1: high-rated bestseller with high sales
         bestseller_doc = MockDoc(
             stars=4.8, 
             isBestSeller=True, 
@@ -37,7 +37,7 @@ def test_smart_ranking():
             title="Premium Bestseller"
         )
         
-        # Test case 2: High-rated non-bestseller with moderate sales
+        # test case 2: high-rated non-bestseller with moderate sales
         value_doc = MockDoc(
             stars=4.6, 
             isBestSeller=False, 
@@ -45,7 +45,7 @@ def test_smart_ranking():
             title="Value Alternative"
         )
         
-        # Test case 3: Lower-rated bestseller
+        # test case 3: lower-rated bestseller
         mediocre_bestseller = MockDoc(
             stars=3.8, 
             isBestSeller=True, 
@@ -53,7 +53,7 @@ def test_smart_ranking():
             title="Mediocre Bestseller"
         )
         
-        # Calculate scores
+        # calculate scores
         bestseller_score = smart_ranking_score(bestseller_doc)
         value_score = smart_ranking_score(value_doc)
         mediocre_score = smart_ranking_score(mediocre_bestseller)
@@ -62,7 +62,7 @@ def test_smart_ranking():
         print(f"Value Alternative score: {value_score:.3f}")
         print(f"Mediocre Bestseller score: {mediocre_score:.3f}")
         
-        # Verify ranking logic
+        # verify ranking logic
         assert bestseller_score > value_score, "Premium bestseller should score higher than value alternative"
         assert bestseller_score > mediocre_score, "High-rated bestseller should beat mediocre bestseller"
         
@@ -83,14 +83,14 @@ def test_two_tier_retrieval():
         print(f"\n Testing Two-Tier Retrieval System")
         print("-" * 50)
         
-        # Import required modules
+        # import required modules
         from app.shopping_agent import two_tier_product_retrieval, LocalSentenceTransformerEmbeddings
         from langchain_milvus import Milvus
         import os
         
         print("🔗 Connecting to vector database...")
         
-        # Setup vector store connection
+        # setup vector store connection
         embedding_model = LocalSentenceTransformerEmbeddings()
         
         vectorstore = Milvus(
@@ -104,7 +104,7 @@ def test_two_tier_retrieval():
         
         print(" Connected successfully!")
         
-        # Test two-tier retrieval
+        # test two-tier retrieval
         test_query = "wireless headphones"
         print(f"\n Testing two-tier retrieval with query: '{test_query}'")
         
@@ -118,7 +118,7 @@ def test_two_tier_retrieval():
         
         print(f" Retrieved {len(results)} products from two-tier system")
         
-        # Analyze results
+        # analyze results
         bestseller_count = 0
         value_count = 0
         
@@ -144,7 +144,7 @@ def test_two_tier_retrieval():
         print(f"    Premium Choices: {bestseller_count}")
         print(f"    Value Alternatives: {value_count}")
         
-        # Verify we have a good mix
+        # verify we have a good mix
         if bestseller_count > 0 and value_count > 0:
             print(" Good mix of premium and value options!")
         elif bestseller_count > 0:
@@ -174,11 +174,11 @@ def test_full_agent_integration():
         
         from app.shopping_agent import main
         
-        # Initialize agent
+        # initialize agent
         agent = main()
         print(" smart agent initialized!")
         
-        # Test queries
+        # test queries
         test_queries = [
             "Show me the best wireless headphones",
             "I need affordable laptop computers under $800",
@@ -194,7 +194,7 @@ def test_full_agent_integration():
                 messages = result.get("messages", [])
                 response = messages[-1].content if messages else "No response"
                 
-                # Check for smart features in response
+                # check for smart features in response
                 features_found = []
                 if "Premium" in response or "" in response:
                     features_found.append("Premium tier mentions")
@@ -231,15 +231,15 @@ if __name__ == "__main__":
     
     success_count = 0
     
-    # Test 1: Ranking algorithm
+    # test 1: ranking algorithm
     if test_smart_ranking():
         success_count += 1
     
-    # Test 2: Two-tier retrieval
+    # test 2: two-tier retrieval
     if test_two_tier_retrieval():
         success_count += 1
     
-    # Test 3: Full agent integration
+    # test 3: full agent integration
     if test_full_agent_integration():
         success_count += 1
     

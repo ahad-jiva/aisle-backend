@@ -1,5 +1,5 @@
 """
-FastAPI application for the shopping agent API
+fastapi application for the shopping agent api
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,21 +20,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for frontend integration
+# configure cors for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this appropriately for production
+    allow_origins=["*"],  # configure this appropriately for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Global agent instance
+# global agent instance
 agent = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the shopping agent on startup"""
+    """initialize the shopping agent on startup"""
     global agent
     try:
         agent = initialize_agent()
@@ -43,20 +43,20 @@ async def startup_event():
         print(f"Failed to initialize shopping agent: {e}")
         raise e
 
-# Request/Response models
+# request/response models
 class ChatRequest(BaseModel):
     message: str
     image_search: Optional[bool] = False
-    image_data: Optional[str] = None  # base64 string or data URL
+    image_data: Optional[str] = None  # base64 string or data url
 
 class ChatResponse(BaseModel):
     response: str
     products: List[dict]
 
-# Structured Product Models for Frontend Cards
+# structured product models for frontend cards
 # class ProductCard(BaseModel):
-#     """Individual product card for frontend display"""
-#     id: str  # Unique identifier
+#     """individual product card for frontend display"""
+#     id: str  # unique identifier
 #     title: str
 #     price: float
 #     rating: float
@@ -66,23 +66,23 @@ class ChatResponse(BaseModel):
 #     is_bestseller: bool
 #     sales_volume: int
 #     tier: str  # "premium" or "value"
-#     tier_label: str  # "Premium Choice" or "Value Alternative"
+#     tier_label: str  # "premium choice" or "value alternative"
 #     description: Optional[str] = None
 
 
-# API Endpoints
+# api endpoints
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    General chat endpoint that can handle any user query.
-    The agent will automatically route to appropriate tools.
+    general chat endpoint that can handle any user query.
+    the agent will automatically route to appropriate tools.
     """
     if not agent:
         raise HTTPException(status_code=500, detail="Agent not initialized")
     
     try:
-        # Prepare message; if image_search is requested, decode and persist image, and prepend hint
+        # prepare message; if image_search is requested, decode and persist image, and prepend hint
         user_message = request.message or ""
 
         if request.image_search:
@@ -90,10 +90,10 @@ async def chat(request: ChatRequest):
             if request.image_data:
                 try:
                     data = request.image_data
-                    # Handle data URL
+                    # handle data url
                     if data.startswith("data:") and ";base64," in data:
                         header, b64 = data.split(",", 1)
-                        # Try to infer file extension
+                        # try to infer file extension
                         ext = "png"
                         if header.startswith("data:image/"):
                             mime_ext = header.split("/")[1].split(";")[0]
@@ -113,7 +113,7 @@ async def chat(request: ChatRequest):
                 except Exception:
                     saved_path = None
 
-            prefix = "User added an image, use the ImageSearch tool."
+            prefix = "user added an image, use the imagesearch tool."
             if saved_path:
                 prefix += f" Image path: {saved_path}"
             user_message = f"{prefix}\n{user_message}".strip()
@@ -122,18 +122,18 @@ async def chat(request: ChatRequest):
             {"messages": [{"role": "user", "content": user_message}]},
             {"configurable": {"thread_id": "1"}}
         )
-        # Extract the response and any tool outputs (AIMessage objects)
+        # extract the response and any tool outputs (aimessage objects)
         messages = result.get("messages", [])
         response = "Sorry, I couldn't process your request."
         products: List[dict] = []
 
         if messages:
             last_msg = messages[-1]
-            # LLM final answer
+            # llm final answer
             response = getattr(last_msg, "content", response)
 
-            # Consider only messages from the latest user message onward in this turn
-            # Find index of the last user message (prefer matching current request.message)
+            # consider only messages from the latest user message onward in this turn
+            # find index of the last user message (prefer matching current request.message)
             last_user_index = -1
             for i in range(len(messages) - 1, -1, -1):
                 m = messages[i]
@@ -141,26 +141,26 @@ async def chat(request: ChatRequest):
                 content = getattr(m, "content", None)
                 if role in ("user", "human"):
                     last_user_index = i
-                    # If content matches current request, stop here
+                    # if content matches current request, stop here
                     if isinstance(content, str) and content == request.message:
                         break
             scan_slice = messages[last_user_index + 1:] if last_user_index >= 0 else messages
 
-            # Scan messages in reverse within this slice for the most recent tool output that looks like JSON
+            # scan messages in reverse within this slice for the most recent tool output that looks like json
             for m in reversed(scan_slice):
                 tool_output = None
 
-                # Case 1: attached in additional_kwargs
+                # case 1: attached in additional_kwargs
                 if hasattr(m, "additional_kwargs") and isinstance(m.additional_kwargs, dict):
                     tool_output = m.additional_kwargs.get("tool_output")
 
-                # Case 2: content is a plain string
+                # case 2: content is a plain string
                 if tool_output is None and hasattr(m, "content") and isinstance(m.content, str):
                     text = m.content.strip()
                     if (text.startswith("{") and text.endswith("}")) or (text.startswith("[") and text.endswith("]")):
                         tool_output = text
 
-                # Case 3: content is a list of parts (e.g., LangGraph message parts)
+                # case 3: content is a list of parts (e.g., langgraph message parts)
                 if tool_output is None and hasattr(m, "content") and isinstance(m.content, list):
                     for part in reversed(m.content):
                         if isinstance(part, dict):
@@ -186,7 +186,7 @@ async def chat(request: ChatRequest):
                             products = parsed
                             break
                     except Exception:
-                        # Ignore non-JSON contents
+                        # ignore non-json contents
                         pass
 
         return ChatResponse(
@@ -199,13 +199,13 @@ async def chat(request: ChatRequest):
 # @app.post("/search/products", response_model=ChatResponse)
 # async def search_products(request: ChatRequest):
 #     """
-#     Search for products based on text query - returns structured data for frontend cards
+#     search for products based on text query - returns structured data for frontend cards
 #     """
 #     try:
-#         # Use structured product recommendations
+#         # use structured product recommendations
 #         result = get_structured_product_recommendations(request.query)
         
-#         # Convert to response model
+#         # convert to response model
 #         product_cards = [ProductCard(**product) for product in result["products"]]
         
 #         return ChatResponse(
@@ -213,19 +213,19 @@ async def chat(request: ChatRequest):
 #             session_id=request.session_id
 #         )
 #     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+#         raise HTTPException(status_code=500, detail=f"error searching products: {str(e)}")
 
 # @app.post("/search/image", response_model=ChatResponse)
 # async def search_by_image(request: ChatRequest):
 #     """
-#     Search for products similar to test image in data folder (test mode)
-#     Returns structured data for frontend cards
+#     search for products similar to test image in data folder (test mode)
+#     returns structured data for frontend cards
 #     """
 #     try:
-#         # Use structured image search
+#         # use structured image search
 #         result = get_structured_image_search_results()
         
-#         # Convert to response model
+#         # convert to response model
 #         product_cards = [ProductCard(**product) for product in result["products"]]
         
 #         return ChatResponse(
@@ -234,12 +234,12 @@ async def chat(request: ChatRequest):
 #         )
             
 #     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error processing image search: {str(e)}")
+#         raise HTTPException(status_code=500, detail=f"error processing image search: {str(e)}")
 
 @app.get("/health")
 async def health_check():
     """
-    Health check endpoint for monitoring
+    health check endpoint for monitoring
     """
     return {
         "status": "healthy",

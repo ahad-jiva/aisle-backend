@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
@@ -15,7 +15,7 @@ def main():
     print("Fast Amazon Image Vector Database Builder")
     print("=" * 50)
     
-    # Check if data exists
+    # check if data exists
     if not os.path.exists("data/amazon_products.csv"):
         print("Missing data/amazon_products.csv")
         sys.exit(1)
@@ -72,7 +72,7 @@ def main():
             
         elif choice == "3":
             print("\nRunning Speed Test (Two-Phase)...")
-            # Load and limit data
+            # load and limit data
             products_df, categories_df = builder.load_data()
             products_df = products_df.head(100)
             

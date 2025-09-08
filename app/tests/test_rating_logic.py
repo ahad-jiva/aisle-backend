@@ -7,25 +7,25 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
-# Load environment
+# load environment
 load_dotenv()
 
 def test_enhanced_retrieval():
     """Test the enhanced retrieval logic"""
     
     try:
-        # Import required modules
+        # import required modules
         from app.shopping_agent import two_tier_product_retrieval, LocalSentenceTransformerEmbeddings
         from langchain_milvus import Milvus
         import os
         
         print("🔗 Connecting to vector database...")
         
-        # Setup vector store connection
+        # setup vector store connection
         embedding_model = LocalSentenceTransformerEmbeddings()
         
         vectorstore = Milvus(
@@ -39,16 +39,16 @@ def test_enhanced_retrieval():
         
         print(" Connected successfully!")
         
-        # Test enhanced retrieval
+        # test enhanced retrieval
         test_query = "wireless headphones"
         print(f"\n Testing enhanced retrieval with query: '{test_query}'")
         
-        # Get enhanced results using two-tier retrieval system
+        # get enhanced results using two-tier retrieval system
         enhanced_results = two_tier_product_retrieval(vectorstore, test_query, k_bestsellers=8, k_alternatives=7, final_count=5)
         
         print(f" Retrieved {len(enhanced_results)} products (top-rated)")
         
-        # Display results with ratings
+        # display results with ratings
         for i, doc in enumerate(enhanced_results, 1):
             metadata = doc.metadata
             title = metadata.get('title', 'Unknown')[:60] + "..."
@@ -60,7 +60,7 @@ def test_enhanced_retrieval():
             print(f"    Rating: {stars} stars ({reviews} reviews)")
             print(f"    Price: ${price}")
         
-        # Verify sorting by rating
+        # verify sorting by rating
         ratings = [doc.metadata.get('stars', 0) for doc in enhanced_results]
         is_sorted = all(ratings[i] >= ratings[i+1] for i in range(len(ratings)-1))
         
@@ -87,11 +87,11 @@ def test_agent_integration():
         
         from app.shopping_agent import main
         
-        # Initialize agent
+        # initialize agent
         agent = main()
         print(" Agent initialized successfully!")
         
-        # Test query
+        # test query
         test_query = "Show me the best wireless headphones"
         print(f" Testing with query: '{test_query}'")
         
@@ -104,7 +104,7 @@ def test_agent_integration():
         print(response)
         print("=" * 50)
         
-        # Check if response mentions ratings
+        # check if response mentions ratings
         if "star" in response.lower() or "rating" in response.lower() or "" in response:
             print("\n Response includes rating information!")
         else:
@@ -119,10 +119,10 @@ if __name__ == "__main__":
     print(" Testing Enhanced Rating-Based Product Recommendations")
     print("=" * 60)
     
-    # Test 1: Enhanced retrieval logic
+    # test 1: enhanced retrieval logic
     test_enhanced_retrieval()
     
-    # Test 2: Full agent integration  
+    # test 2: full agent integration  
     test_agent_integration()
     
     print(f"\n All tests completed!")

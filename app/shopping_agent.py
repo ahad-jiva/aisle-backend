@@ -24,7 +24,7 @@ ZILLIZ_TOKEN = os.getenv("ZILLIZ_TOKEN")
 ZILLIZ_URI = os.getenv("ZILLIZ_URI")
 
 def format_docs(docs):
-    """Format documents with smart product information including bestseller status"""
+    """format documents with smart product information including bestseller status"""
     if not docs:
         return "No products found."
     
@@ -32,7 +32,7 @@ def format_docs(docs):
     for i, doc in enumerate(docs, 1):
         metadata = doc.metadata
         
-        # Extract key information
+        # extract key information
         title = metadata.get('title', 'Unknown Product')
         stars = metadata.get('stars', 0)
         price = metadata.get('price', 0)
@@ -40,13 +40,13 @@ def format_docs(docs):
         is_bestseller = metadata.get('isBestSeller', False)
         sales_volume = metadata.get('boughtInLastMonth', 0)
         
-        # Format price
+        # format price
         price_str = f"${price}" if price > 0 else "Price not available"
         
-        # Format rating with visual indicator
+        # format rating with visual indicator
         rating_str = f"{stars} stars" if stars > 0 else "No rating"
         
-        # Bestseller and sales indicators
+        # bestseller and sales indicators
         status_indicators = []
         if is_bestseller:
             status_indicators.append("BESTSELLER")
@@ -56,13 +56,13 @@ def format_docs(docs):
         elif sales_volume > 0:
             status_indicators.append(f"{sales_volume} sold this month")
         
-        # Product tier indication
+        # product tier indication
         if is_bestseller:
             tier_info = "Premium Choice"
         else:
             tier_info = "Value Alternative"
         
-        # Create smart product description
+        # create smart product description
         product_info = f"""Product {i}: {title}
 {tier_info} - {' | '.join(status_indicators) if status_indicators else 'Standard Product'}
 Rating: {rating_str}
@@ -75,7 +75,7 @@ Description: {doc.page_content}"""
     return "\n\n" + "\n\n".join(formatted_products)
 
 def docs_to_product_cards(docs) -> List[Dict[str, Any]]:
-    """Convert documents to structured product card data for frontend"""
+    """convert documents to structured product card data for frontend"""
     if not docs:
         return []
     
@@ -83,7 +83,7 @@ def docs_to_product_cards(docs) -> List[Dict[str, Any]]:
     for doc in docs:
         metadata = doc.metadata
         
-        # Extract key information
+        # extract key information
         title = metadata.get('title', 'Unknown Product')
         stars = float(metadata.get('stars', 0))
         price = float(metadata.get('price', 0))
@@ -93,14 +93,14 @@ def docs_to_product_cards(docs) -> List[Dict[str, Any]]:
         product_url = metadata.get('productURL', '')
         image_url = metadata.get('imgUrl', '')
         
-        # Generate unique ID from title and URL
+        # generate unique id from title and url
         product_id = hashlib.md5(f"{title}{product_url}".encode()).hexdigest()[:12]
         
-        # Determine tier
+        # determine tier
         tier = "premium" if is_bestseller else "value"
         tier_label = "Premium Choice" if is_bestseller else "Value Alternative"
         
-        # Create product card
+        # create product card
         product_card = {
             "id": product_id,
             "title": title,
@@ -121,7 +121,7 @@ def docs_to_product_cards(docs) -> List[Dict[str, Any]]:
     return product_cards
 
 def create_recommendation_summary(product_cards: List[Dict[str, Any]], query: str) -> str:
-    """Create a summary of the recommendations for the frontend"""
+    """create a summary of the recommendations for the frontend"""
     if not product_cards:
         return "No products found matching your query."
     
@@ -147,36 +147,36 @@ def create_recommendation_summary(product_cards: List[Dict[str, Any]], query: st
 
 def smart_ranking_score(doc):
     """
-    Calculate smart ranking score based on multiple factors
+    calculate smart ranking score based on multiple factors
     
-    Factors:
-    - Star rating (0-5): 40% weight
-    - Sales volume (boughtInLastMonth): 30% weight  
-    - Bestseller status: 30% weight
+    factors:
+    - star rating (0-5): 40% weight
+    - sales volume (boughtInLastMonth): 30% weight  
+    - bestseller status: 30% weight
     """
     metadata = doc.metadata
     
-    # Extract and normalize ratings (0-5 scale)
+    # extract and normalize ratings (0-5 scale)
     try:
         stars = float(metadata.get('stars', 0))
-        stars = max(0, min(5, stars))  # Clamp to 0-5 range
+        stars = max(0, min(5, stars))  # clamp to 0-5 range
     except (ValueError, TypeError):
         stars = 0
     
-    # Extract and normalize sales volume (log scale for large numbers)
+    # extract and normalize sales volume (log scale for large numbers)
     try:
         sales = int(metadata.get('boughtInLastMonth', 0))
         sales = max(0, sales)
-        # Use log scale to prevent extreme sales from dominating
-        normalized_sales = math.log10(sales + 1) / math.log10(10001)  # Normalize to 0-1
+        # use log scale to prevent extreme sales from dominating
+        normalized_sales = math.log10(sales + 1) / math.log10(10001)  # normalize to 0-1
     except (ValueError, TypeError):
         normalized_sales = 0
     
-    # Bestseller bonus
+    # bestseller bonus
     is_bestseller = metadata.get('isBestSeller', False)
     bestseller_bonus = 1.0 if is_bestseller else 0.0
     
-    # Weighted score calculation
+    # weighted score calculation
     rating_score = (stars / 5.0) * 0.4  # 40% weight for ratings
     sales_score = normalized_sales * 0.3  # 30% weight for sales volume
     bestseller_score = bestseller_bonus * 0.3  # 30% weight for bestseller status
@@ -189,21 +189,21 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
     """
     smart two-tier product retrieval system
     
-    Tier 1: Bestsellers ranked by ratings and sales
-    Tier 2: Value alternatives (non-bestsellers) with high ratings and lower prices
+    tier 1: bestsellers ranked by ratings and sales
+    tier 2: value alternatives (non-bestsellers) with high ratings and lower prices
     
-    Args:
-        vectorstore: The Milvus vector store
-        query: Search query
-        k_bestsellers: Number of bestseller candidates to retrieve
-        k_alternatives: Number of alternative candidates to retrieve
-        final_count: Final number of products to return
+    args:
+        vectorstore: the milvus vector store
+        query: search query
+        k_bestsellers: number of bestseller candidates to retrieve
+        k_alternatives: number of alternative candidates to retrieve
+        final_count: final number of products to return
     
-    Returns:
-        List of recommended products with mix of bestsellers and value alternatives
+    returns:
+        list of recommended products with mix of bestsellers and value alternatives
     """
     
-    # Tier 1: Get bestselling products
+    # tier 1: get bestselling products
     try:
         bestseller_filter = 'isBestSeller == true'
         bestsellers = vectorstore.similarity_search(
@@ -213,16 +213,16 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
         )
     except Exception as e:
         print(f"Bestseller search failed, falling back to unfiltered: {e}")
-        # Fallback if filtering not supported
+        # fallback if filtering not supported
         all_candidates = vectorstore.similarity_search(query, k=k_bestsellers * 2)
         bestsellers = [doc for doc in all_candidates if doc.metadata.get('isBestSeller', False)][:k_bestsellers]
     
-    # Sort bestsellers by smart ranking
+    # sort bestsellers by smart ranking
     bestsellers_ranked = sorted(bestsellers, key=smart_ranking_score, reverse=True)
     
-    # Calculate average price of top bestsellers for value threshold
+    # calculate average price of top bestsellers for value threshold
     bestseller_prices = []
-    for doc in bestsellers_ranked[:3]:  # Use top 3 bestsellers for price benchmark
+    for doc in bestsellers_ranked[:3]:  # use top 3 bestsellers for price benchmark
         try:
             price = float(doc.metadata.get('price', 0))
             if price > 0:
@@ -231,9 +231,9 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
             continue
     
     avg_bestseller_price = sum(bestseller_prices) / len(bestseller_prices) if bestseller_prices else 1000
-    price_threshold = avg_bestseller_price * 0.8  # Value alternatives should be 20% cheaper
+    price_threshold = avg_bestseller_price * 0.8  # value alternatives should be 20% cheaper
     
-    # Tier 2: Get value alternatives (non-bestsellers with good ratings and lower prices)
+    # tier 2: get value alternatives (non-bestsellers with good ratings and lower prices)
     try:
         alternative_filter = 'isBestSeller == false'
         alternatives = vectorstore.similarity_search(
@@ -243,31 +243,31 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
         )
     except Exception as e:
         print(f"Alternative search failed, falling back to unfiltered: {e}")
-        # Fallback if filtering not supported
+        # fallback if filtering not supported
         all_candidates = vectorstore.similarity_search(query, k=k_alternatives * 2)
         alternatives = [doc for doc in all_candidates if not doc.metadata.get('isBestSeller', False)][:k_alternatives]
     
-    # Filter alternatives by price and rating criteria
+    # filter alternatives by price and rating criteria
     quality_alternatives = []
     for doc in alternatives:
         try:
             price = float(doc.metadata.get('price', 0))
             stars = float(doc.metadata.get('stars', 0))
             
-            # Criteria for value alternatives:
-            # - Price below threshold OR good rating (4+ stars)
-            # - Minimum 3.5 star rating
+            # criteria for value alternatives:
+            # - price below threshold or good rating (4+ stars)
+            # - minimum 3.5 star rating
             if (price < price_threshold or stars >= 4.0) and stars >= 3.5:
                 quality_alternatives.append(doc)
         except (ValueError, TypeError):
-            # Include if we can't parse price/rating (assume it might be good)
+            # include if we can't parse price/rating (assume it might be good)
             quality_alternatives.append(doc)
     
-    # Sort alternatives by rating and sales
+    # sort alternatives by rating and sales
     alternatives_ranked = sorted(quality_alternatives, key=smart_ranking_score, reverse=True)
     
-    # Combine results: Mix of bestsellers and alternatives
-    # Aim for 60% bestsellers, 40% alternatives in final results
+    # combine results: mix of bestsellers and alternatives
+    # aim for 60% bestsellers, 40% alternatives in final results
     bestseller_count = min(len(bestsellers_ranked), max(1, int(final_count * 0.6)))
     alternative_count = final_count - bestseller_count
     
@@ -275,13 +275,13 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
     final_recommendations.extend(bestsellers_ranked[:bestseller_count])
     final_recommendations.extend(alternatives_ranked[:alternative_count])
     
-    # If we don't have enough, fill with remaining from either tier
+    # if we don't have enough, fill with remaining from either tier
     if len(final_recommendations) < final_count:
         remaining_needed = final_count - len(final_recommendations)
         remaining_bestsellers = bestsellers_ranked[bestseller_count:]
         remaining_alternatives = alternatives_ranked[alternative_count:]
         
-        # Combine and sort remaining by score
+        # combine and sort remaining by score
         remaining = remaining_bestsellers + remaining_alternatives
         remaining_sorted = sorted(remaining, key=smart_ranking_score, reverse=True)
         final_recommendations.extend(remaining_sorted[:remaining_needed])
@@ -289,44 +289,44 @@ def two_tier_product_retrieval(vectorstore, query: str, k_bestsellers: int = 8, 
     return final_recommendations[:final_count]
 
 class LocalSentenceTransformerEmbeddings(Embeddings):
-    """Local sentence transformer embeddings - same as used in vectordb construction"""
+    """local sentence transformer embeddings - same as used in vectordb construction"""
     
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
-        """Initialize with the same model used to build the vector database"""
+        """initialize with the same model used to build the vector database"""
         self.model = SentenceTransformer(model_name)
         
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Embed multiple documents"""
+        """embed multiple documents"""
         embeddings = self.model.encode(texts, convert_to_numpy=True)
         return embeddings.tolist()
     
     def embed_query(self, text: str) -> List[float]:
-        """Embed a single query"""
+        """embed a single query"""
         embedding = self.model.encode([text], convert_to_numpy=True)
         return embedding[0].tolist()
 
 class CLIPImageEmbeddings(Embeddings):
-    """Custom embedding class for CLIP image embeddings"""
+    """custom embedding class for clip image embeddings"""
     
     def __init__(self):
         self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Embed text documents - not used for image embeddings"""
+        """embed text documents - not used for image embeddings"""
         raise NotImplementedError("This embedding class is for images only")
     
     def embed_query(self, text: str) -> List[float]:
-        """Embed text query - not used for image embeddings"""
+        """embed text query - not used for image embeddings"""
         raise NotImplementedError("This embedding class is for images only")
     
     def embed_image(self, image_path: str) -> List[float]:
-        """Embed a single image and return the embedding"""
+        """embed a single image and return the embedding"""
         image = Image.open(image_path).convert("RGB")
         inputs = self.processor(images=image, return_tensors="pt")
         with torch.no_grad():
             image_features = self.model.get_image_features(**inputs)
-            # Normalize the features
+            # normalize the features
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)
             return image_features.numpy().flatten().tolist()
 
@@ -338,7 +338,7 @@ def initialize_agent():
         temperature=0.7
     )
 
-    # System prompt for the agent (simple string)
+    # system prompt for the agent (simple string)
     system_prompt = """
 
 You are AI.sle, an AI shopping agent acting as a friendly and knowledgeable online store employee. Your job is to help customers explore products, answer questions, and recommend items from the store catalog. You must always ground your answers in the product database and search results provided to you.
@@ -370,11 +370,11 @@ Some important guidelines:
         }
     )
 
-    # Create simple product retrieval function
+    # create simple product retrieval function
     def smart_retriever(query: str):
         """simple vector similarity product search"""
         docs = vectorstore_text.similarity_search(query, k=6)
-        # Convert retrieved docs to structured product cards for frontend
+        # convert retrieved docs to structured product cards for frontend
         product_cards = docs_to_product_cards(docs)
         recommendation_summary = create_recommendation_summary(product_cards, query)
         payload = {
@@ -404,7 +404,7 @@ Some important guidelines:
         try:
             import os
             
-            # Validate image path exists
+            # validate image path exists
             if not os.path.exists(image_path):
                 return json.dumps({
                     "products": [],
@@ -414,11 +414,11 @@ Some important guidelines:
             
             print(f"Processing image: {image_path}")
             
-            # Embed the provided image
+            # embed the provided image
             emb = image_embeddings.embed_image(image_path)
             results = vectorstore_image.similarity_search_by_vector(emb, k=6)
             
-            # Convert to structured product cards JSON
+            # convert to structured product cards json
             product_cards = docs_to_product_cards(results)
             test_image_name = os.path.basename(image_path)
             recommendation_summary = f"Found {len(product_cards)} visually similar products to {test_image_name}."
@@ -451,29 +451,26 @@ Some important guidelines:
         )
     ]
 
-    # Note: Custom prompt removed - langgraph create_react_agent uses its own prompting system
-    # The guidelines from the original prompt are still relevant for tool descriptions
-
     checkpointer = InMemorySaver()
 
     agent = create_react_agent(llm, tools=tools, prompt=system_prompt, checkpointer=checkpointer)
 
     return agent
 
-# Global variables for structured API access
+# global variables for structured api access
 _vectorstore_text = None
 _vectorstore_image = None
 _image_embeddings = None
 
 def get_structured_product_recommendations(query: str) -> Dict[str, Any]:
     """
-    Get structured product recommendations for API endpoints
-    Returns JSON-serializable data for frontend cards
+    get structured product recommendations for api endpoints
+    returns json-serializable data for frontend cards
     """
     global _vectorstore_text
     
     if _vectorstore_text is None:
-        # Initialize if not already done
+        # initialize if not already done
         embedding_model = LocalSentenceTransformerEmbeddings()
         _vectorstore_text = Milvus(
             embedding_function=embedding_model,
@@ -484,10 +481,10 @@ def get_structured_product_recommendations(query: str) -> Dict[str, Any]:
             }
         )
     
-    # Simple vector similarity search
+    # simple vector similarity search
     smart_docs = _vectorstore_text.similarity_search(query, k=8)
     
-    # Convert to structured product cards
+    # convert to structured product cards
     product_cards = docs_to_product_cards(smart_docs)
     recommendation_summary = create_recommendation_summary(product_cards, query)
     
@@ -500,13 +497,13 @@ def get_structured_product_recommendations(query: str) -> Dict[str, Any]:
 
 def get_structured_image_search_results() -> Dict[str, Any]:
     """
-    Get structured image search results for API endpoints
-    Returns JSON-serializable data for frontend cards
+    get structured image search results for api endpoints
+    returns json-serializable data for frontend cards
     """
     global _vectorstore_image, _image_embeddings
     
     if _vectorstore_image is None or _image_embeddings is None:
-        # Initialize if not already done
+        # initialize if not already done
         _image_embeddings = CLIPImageEmbeddings()
         _vectorstore_image = Milvus(
             embedding_function=_image_embeddings,
@@ -518,19 +515,19 @@ def get_structured_image_search_results() -> Dict[str, Any]:
         )
     
     try:
-        # Look for test image in data folder
+        # look for test image in data folder
         import glob
         
         data_folder = "data"
         image_extensions = ["*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.webp"]
         
-        # Find any image file in the data folder
+        # find any image file in the data folder
         test_image_path = None
         for ext in image_extensions:
             pattern = os.path.join(data_folder, ext)
             matches = glob.glob(pattern, recursive=False)
             if matches:
-                test_image_path = matches[0]  # Use the first image found
+                test_image_path = matches[0]  # use the first image found
                 break
         
         if not test_image_path:
@@ -542,11 +539,11 @@ def get_structured_image_search_results() -> Dict[str, Any]:
                 "recommendation_summary": "No test image found in data folder."
             }
         
-        # Embed the test image
+        # embed the test image
         emb = _image_embeddings.embed_image(test_image_path)
         results = _vectorstore_image.similarity_search_by_vector(emb, k=5)
         
-        # Convert to structured product cards
+        # convert to structured product cards
         product_cards = docs_to_product_cards(results)
         test_image_name = os.path.basename(test_image_path)
         recommendation_summary = f"Found {len(product_cards)} visually similar products to {test_image_name}."
@@ -571,6 +568,6 @@ def get_structured_image_search_results() -> Dict[str, Any]:
 if __name__ == "__main__":
     agent = initialize_agent()
     print("Shopping agent initialized successfully!")
-    # Example usage:
-    # response = agent.invoke({"messages": [{"role": "user", "content": "What products do you recommend for outdoor activities?"}]})
+    # example usage:
+    # response = agent.invoke({"messages": [{"role": "user", "content": "what products do you recommend for outdoor activities?"}]})
     # print(response["messages"][-1].content)

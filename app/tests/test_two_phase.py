@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
@@ -21,28 +21,28 @@ def test_two_phase_approach():
         from app.vectordb_image_optimized import OptimizedImageVectorDBBuilder
         import torch
         
-        # Initialize builder
+        # initialize builder
         device = "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"  Device: {device}")
         
         builder = OptimizedImageVectorDBBuilder(device=device)
         
-        # Load a small sample for testing
+        # load a small sample for testing
         print(" Loading sample data...")
         products_df, categories_df = builder.load_data()
         
-        # Test with just 50 products
+        # test with just 50 products
         test_df = products_df.head(50)
         print(f" Testing with {len(test_df)} products")
         
-        # Test two-phase processing
+        # test two-phase processing
         print("\n Starting Two-Phase Processing Test...")
         
         processed_images = builder.two_phase_process_images(
             test_df, 
             categories_df,
-            download_workers=4,      # Conservative for testing
-            embedding_batch_size=16  # Small batches for testing
+            download_workers=4,      # conservative for testing
+            embedding_batch_size=16  # small batches for testing
         )
         
         if processed_images:
@@ -51,7 +51,7 @@ def test_two_phase_approach():
             print(f"   Sample embedding shape: {len(processed_images[0]['embedding'])}")
             print(f"   Cache directory: image_cache/")
             
-            # Show some stats
+            # show some stats
             categories = set(img['metadata']['category'] for img in processed_images)
             bestsellers = sum(1 for img in processed_images if img['metadata']['isBestSeller'])
             

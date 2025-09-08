@@ -7,24 +7,24 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
-# Load environment
+# load environment
 load_dotenv()
 
 def test_embedding_dimensions():
     """Test that both vectordb and agent use same embedding dimensions"""
     
     try:
-        # Import the embedding class
+        # import the embedding class
         from app.shopping_agent import LocalSentenceTransformerEmbeddings
         
-        # Create embedding instance
+        # create embedding instance
         embeddings = LocalSentenceTransformerEmbeddings()
         
-        # Test embedding a sample text
+        # test embedding a sample text
         test_text = "wireless headphones"
         embedding = embeddings.embed_query(test_text)
         
@@ -33,7 +33,7 @@ def test_embedding_dimensions():
         print(f" Test text: '{test_text}'")
         print(f" First 5 values: {embedding[:5]}")
         
-        # Verify expected dimension
+        # verify expected dimension
         if len(embedding) == 384:
             print(" Correct dimension (384) - matches vectordb!")
         else:

@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
@@ -15,7 +15,7 @@ def main():
     print("  Amazon Image Vector Database Builder")
     print("=" * 40)
     
-    # Check if data exists
+    # check if data exists
     if not os.path.exists("data/amazon_products.csv"):
         print(" Missing data/amazon_products.csv")
         print("Please ensure your Amazon dataset is in the data/ folder")
@@ -35,12 +35,12 @@ def main():
         print("Cancelled by user")
         sys.exit(0)
     
-    # Import and run the image vector database builder
+    # import and run the image vector database builder
     try:
         from app.vectordb_image import AmazonImageVectorDBBuilder
         builder = AmazonImageVectorDBBuilder()
         
-        # Ask about limiting dataset for testing
+        # ask about limiting dataset for testing
         limit_response = input("Limit to first 100 products for testing? (y/N): ")
         if limit_response.lower() in ['y', 'yes']:
             print("Building with limited dataset (100 products)...")

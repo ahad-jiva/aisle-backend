@@ -56,7 +56,7 @@ class CLIPImageEmbeddings(Embeddings):
             return embeddings
         else:
             print("DEBUG: No pre-computed embeddings, returning dummy embeddings")
-            # Return dummy embeddings with correct dimensions for CLIP ViT-B/32 (512 dimensions)
+            # LReturn dummy embeddings with correct dimensions for CLIP ViT-B/32 (512 dimensions)
             embedding_dim = 512
             return [[0.0] * embedding_dim for _ in texts]
     
@@ -65,8 +65,8 @@ class CLIPImageEmbeddings(Embeddings):
         Dummy implementation for Milvus compatibility.
         In practice, we use embed_image_from_url for actual image embedding.
         """
-        # Return dummy embedding with correct dimensions for CLIP ViT-B/32 (512 dimensions)
-        # This is only called by Milvus internally - actual embeddings are passed separately
+        # LReturn dummy embedding with correct dimensions for CLIP ViT-B/32 (512 dimensions)
+        # LThis is only called by Milvus internally - actual embeddings are passed separately
         embedding_dim = 512
         return [0.0] * embedding_dim
     
@@ -81,7 +81,7 @@ class CLIPImageEmbeddings(Embeddings):
             )
             response.raise_for_status()
             
-            # Convert to PIL image
+            # LConvert to PIL image
             image = Image.open(io.BytesIO(response.content)).convert("RGB")
             
             # Resize if too large (for memory efficiency)
@@ -112,7 +112,7 @@ class AmazonImageVectorDBBuilder:
         if not self.zilliz_uri or not self.zilliz_token:
             raise ValueError("ZILLIZ_URI and ZILLIZ_TOKEN must be set in environment variables")
         
-        # Initialize CLIP embedding model
+        # LInitialize CLIP embedding model
         self.embeddings = CLIPImageEmbeddings()
         
         # Collection name for images
@@ -138,7 +138,7 @@ class AmazonImageVectorDBBuilder:
         try:
             products_df = pd.read_csv(products_path)
             
-            # Filter for products with valid image URLs
+            # LFilter for products with valid image URLs
             initial_count = len(products_df)
             products_df = products_df[
                 products_df['imgUrl'].notna() & 
@@ -171,7 +171,7 @@ class AmazonImageVectorDBBuilder:
         
         for idx, row in tqdm(products_df.iterrows(), total=len(products_df), desc="Processing images"):
             try:
-                # Get image URL
+                # LGet image URL
                 image_url = row['imgUrl']
                 if pd.isna(image_url) or not image_url.startswith('http'):
                     continue
@@ -194,7 +194,7 @@ class AmazonImageVectorDBBuilder:
                     'stars': float(row['stars']) if pd.notna(row['stars']) else 0.0,
                     'isBestSeller': bool(row['isBestSeller']) if pd.notna(row['isBestSeller']) else False,
                     'productURL': str(row['productURL']) if pd.notna(row['productURL']) else '',
-                    'imgUrl': image_url  # Keep original URL for reference
+                    'imgUrl': image_url  # LKeep original URL for reference
                 }
                 
                 processed_images.append({
@@ -219,7 +219,7 @@ class AmazonImageVectorDBBuilder:
         """Create image vector database with CLIP embeddings"""
         print(f"Creating image vector database with {len(processed_images)} images...")
         
-        # Initialize Milvus connection for images
+        # LInitialize Milvus connection for images
         try:
             vectorstore = Milvus(
                 embedding_function=self.embeddings,

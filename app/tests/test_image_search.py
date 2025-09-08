@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 import glob
 
-# Add project root to path
+# add project root to path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
@@ -42,20 +42,20 @@ def test_image_search():
     print(" Testing Image Search Functionality")
     print("=" * 50)
     
-    # Check for test image
+    # check for test image
     test_image = check_test_image()
     if not test_image:
         return
     
     try:
-        # Import the shopping agent
+        # import the shopping agent
         from app.shopping_agent import main
         
         print("\nInitializing shopping agent...")
         agent = main()
         print(" Agent initialized successfully!")
         
-        # Test image search
+        # test image search
         print(f"\n  Testing visual search with: {os.path.basename(test_image)}")
         print("-" * 30)
         
@@ -86,7 +86,7 @@ def test_via_api():
     try:
         import requests
         
-        # Test the API endpoint
+        # test the api endpoint
         response = requests.post("http://localhost:8000/search/image")
         
         if response.status_code == 200:

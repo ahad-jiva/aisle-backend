@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Startup script for the Shopping Agent API
+startup script for the shopping agent api
 """
 
 import os
@@ -8,17 +8,17 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add the project root to Python path
+# add the project root to python path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
 if __name__ == "__main__":
     import uvicorn
     
-    # Load environment variables from .env file
+    # load environment variables from .env file
     load_dotenv()
     
-    # Check for required environment variables
+    # check for required environment variables
     required_vars = ["GEMINI_API_KEY", "ZILLIZ_TOKEN", "ZILLIZ_URI"]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
@@ -26,12 +26,12 @@ if __name__ == "__main__":
         print("Missing required environment variables:")
         for var in missing_vars:
             print(f"   - {var}")
-        print("\nPlease set these variables in your .env file or environment.")
+        print("\nplease set these variables in your .env file or environment.")
         sys.exit(1)
     
-    print("Starting Shopping Agent API...")
-    print("API Documentation will be available at: http://localhost:8000/docs")
-    print("Health check available at: http://localhost:8000/health")
+    print("starting shopping agent api...")
+    print("api documentation will be available at: http://localhost:8000/docs")
+    print("health check available at: http://localhost:8000/health")
     
     try:
         uvicorn.run(
@@ -42,7 +42,7 @@ if __name__ == "__main__":
             log_level="info"
         )
     except KeyboardInterrupt:
-        print("\nShutting down API server...")
+        print("\nshutting down api server...")
     except Exception as e:
-        print(f"Failed to start server: {e}")
+        print(f"failed to start server: {e}")
         sys.exit(1)

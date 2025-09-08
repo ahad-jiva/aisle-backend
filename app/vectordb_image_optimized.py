@@ -113,7 +113,7 @@ class OptimizedCLIPImageEmbeddings(Embeddings):
         
         # Process valid images in batch
         if valid_images:
-            # Filter out None values and process in batch
+            # LFilter out None values and process in batch
             batch_images = [img for img in valid_images if img is not None]
             if batch_images:
                 inputs = self.processor(images=batch_images, return_tensors="pt", padding=True)
@@ -243,7 +243,7 @@ class OptimizedImageVectorDBBuilder:
         download_tasks = []
         for idx, row in products_df.iterrows():
             if pd.notna(row['imgUrl']) and row['imgUrl'].startswith('http'):
-                # Create filename from hash of URL for uniqueness
+                # LCreate filename from hash of URL for uniqueness
                 url_hash = hashlib.md5(row['imgUrl'].encode()).hexdigest()
                 local_path = os.path.join(cache_dir, f"{url_hash}.jpg")
                 download_tasks.append((row['imgUrl'], local_path))
@@ -311,7 +311,7 @@ class OptimizedImageVectorDBBuilder:
         processed_images = []
         failed_embeddings = 0
         
-        # Process in large batches for maximum GPU efficiency
+        # LProcess in large batches for maximum GPU efficiency
         total_batches = (len(embedding_data) + batch_size - 1) // batch_size
         
         print(f"GPU processing {total_batches} batches of {batch_size} images each...")
@@ -339,7 +339,7 @@ class OptimizedImageVectorDBBuilder:
                         pbar.update(len(batch_data))
                         continue
                     
-                    # Batch process with GPU (maximum efficiency!)
+                    # LBatch process with GPU (maximum efficiency!)
                     inputs = self.embeddings.processor(images=batch_images, return_tensors="pt", padding=True)
                     inputs = {k: v.to(self.embeddings.device) for k, v in inputs.items()}
                     

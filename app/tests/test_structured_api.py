@@ -11,7 +11,7 @@ def test_structured_product_search():
     print("Testing Structured Product Search API")
     print("=" * 50)
     
-    # Test product search
+    # test product search
     url = "http://localhost:8000/search/products"
     payload = {
         "query": "wireless bluetooth headphones"
@@ -57,7 +57,7 @@ def test_structured_image_search():
     print("\n  Testing Structured Image Search API")
     print("=" * 50)
     
-    # Test image search
+    # test image search
     url = "http://localhost:8000/search/image"
     
     try:
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     print(" Testing Structured API Responses for Frontend Cards")
     print("=" * 60)
     
-    # Run all tests
+    # run all tests
     test_structured_product_search()
     test_structured_image_search()
     test_chat_endpoint()
