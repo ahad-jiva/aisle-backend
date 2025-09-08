@@ -2,14 +2,13 @@ import os
 import math
 import hashlib
 from dotenv import load_dotenv
+import json
 
-from langchain.agents import create_react_agent, AgentExecutor, Tool
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.memory import ConversationBufferMemory
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.prebuilt import create_react_agent
+from langchain.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from sentence_transformers import SentenceTransformer
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
 from langchain_milvus import Milvus
 from langchain_core.embeddings import Embeddings
 from typing import List, Dict, Any
@@ -331,20 +330,7 @@ class CLIPImageEmbeddings(Embeddings):
             image_features = image_features / image_features.norm(dim=-1, keepdim=True)
             return image_features.numpy().flatten().tolist()
 
-template = """You are a helpful online store assistant with access to a smart product recommendation system. Use this tool as necessary according to the user's query.
-
-## Context:
-{context}
-
-## Question:
-{question}
-
-When recommending products:
-
-"""
-prompt = ChatPromptTemplate.from_template(template)
-
-def main():
+def initialize_agent():
 
     # load llm
     llm = ChatGoogleGenerativeAI(
@@ -352,6 +338,26 @@ def main():
         temperature=0.7
     )
 
+    # System prompt for the agent (simple string)
+    system_prompt = """
+
+You are AI.sle, an AI shopping agent acting as a friendly and knowledgeable online store employee. Your job is to help customers explore products, answer questions, and recommend items from the store catalog. You must always ground your answers in the product database and search results provided to you.
+If asked about your identity, you should say that you are AI.sle, an AI shopping agent acting as a friendly and knowledgeable online store employee.
+Speak in a conversational, helpful, and friendlytone, like a store clerk who wants the customer to find exactly what they need. Avoid being overly robotic or overly casual. Balance warmth with expertise and knowledge. Be concise, but provide enough detail for clarity.
+You have access to a product recommendation system and image search system. Use these tools as necessary according to the user's query.
+    
+Some important guidelines:
+1. The recommended products will be automatically sent to and formatted by the frontend. This means that your response should NOT be a list of product suggestions, but rather a more high level response. For example, instead of listing the products that the user can already see, say something like <I found these products that you may be interested in.>
+2. If the user asks you to search for products, you should use the ProductSearch tool. You should only use this tool if the user explicitly asks you to search for products. Use as specific of a search query as possible to get the best results.
+3. If the user uploads an image, you should use the ImageSearch tool.
+4. If the user's search request is vague or ambiguous, feel free to ask for more clarification before using the tools. It is better to ask for more information than to make assumptions. Remember, the worst possible thing you can do is recommend products that the user did not ask for.
+5. After providing the user with the recommended products, you should ask some follow up questions to help the user narrow down their search. This is a great way to keep the conversation going and show that you are listening to the user.
+6. Your response should be conversational and engaging. You can use emojis and other formatting to make your response more engaging.
+7. DO NOT under any circumstance use language that sounds like a sales pitch or persuades the user to buy products. Your goal is to help the user find the best products for their needs, not to sell them products. You are not a salesperson.
+8. NEVER provide medical advice if the user asks about medical products. You are not a doctor. If the user asks for suggestions for medical products, explictly mention that you are NOT a doctor and that the user should consult a medical professional for help.
+
+
+"""
     # vector db setup - use the same embedding model as vectordb construction
     embedding_model = LocalSentenceTransformerEmbeddings()
 
@@ -364,27 +370,20 @@ def main():
         }
     )
 
-    # Create smart two-tier retrieval function
+    # Create simple product retrieval function
     def smart_retriever(query: str):
-        """smart retriever with bestsellers and value alternatives"""
-        smart_docs = two_tier_product_retrieval(
-            vectorstore_text, 
-            query, 
-            k_bestsellers=8, 
-            k_alternatives=7, 
-            final_count=5
-        )
-        return smart_docs
-    
-    qa_chain = (
-        {
-            "context": lambda x: format_docs(smart_retriever(x)),
-            "question": RunnablePassthrough(),
+        """simple vector similarity product search"""
+        docs = vectorstore_text.similarity_search(query, k=6)
+        # Convert retrieved docs to structured product cards for frontend
+        product_cards = docs_to_product_cards(docs)
+        recommendation_summary = create_recommendation_summary(product_cards, query)
+        payload = {
+            "products": product_cards,
+            "total_results": len(product_cards),
+            "query": query,
+            "recommendation_summary": recommendation_summary
         }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+        return json.dumps(payload)
 
     # image search tool
     image_embeddings = CLIPImageEmbeddings()
@@ -399,52 +398,50 @@ def main():
     )
 
     def image_search_tool(image_path: str) -> str:
-        """Find products similar to the provided image using visual similarity"""
+        """Find products similar to the provided image using visual similarity.
+        Returns a JSON string with products and a summary to be parsed by the API/frontend.
+        """
         try:
             import os
             
             # Validate image path exists
             if not os.path.exists(image_path):
-                return f"Error: Image file not found at path: {image_path}"
+                return json.dumps({
+                    "products": [],
+                    "total_results": 0,
+                    "error": f"Image file not found at path: {image_path}"
+                })
             
             print(f"Processing image: {image_path}")
             
             # Embed the provided image
             emb = image_embeddings.embed_image(image_path)
-            results = vectorstore_image.similarity_search_by_vector(emb, k=5)
+            results = vectorstore_image.similarity_search_by_vector(emb, k=6)
             
-            if not results:
-                return f"No similar products found for image: {os.path.basename(image_path)}"
-            
-            # Format image search results with consistent product information
-            formatted_results = []
-            formatted_results.append(f"Visual search results for: {os.path.basename(image_path)}")
-            formatted_results.append("=" * 50)
-            
-            for i, r in enumerate(results, 1):
-                title = r.metadata.get('title', 'Unknown Product')
-                price = r.metadata.get('price', 0)
-                stars = r.metadata.get('stars', 0)
-                category = r.metadata.get('category', 'Unknown')
-                is_bestseller = r.metadata.get('isBestSeller', False)
-                
-                tier = "Premium Choice" if is_bestseller else "Value Alternative"
-                price_str = f"${price}" if price > 0 else "Price not available"
-                rating_str = f"{stars} stars" if stars > 0 else "No rating"
-                
-                result_info = f"{i}. {title}\n   {tier} | {rating_str} | {price_str} | {category}"
-                formatted_results.append(result_info)
-            
-            return "\n".join(formatted_results)
+            # Convert to structured product cards JSON
+            product_cards = docs_to_product_cards(results)
+            test_image_name = os.path.basename(image_path)
+            recommendation_summary = f"Found {len(product_cards)} visually similar products to {test_image_name}."
+
+            return json.dumps({
+                "products": product_cards,
+                "total_results": len(product_cards),
+                "query": test_image_name,
+                "recommendation_summary": recommendation_summary
+            })
             
         except Exception as e:
-            return f"Error processing image: {str(e)}"
+            return json.dumps({
+                "products": [],
+                "total_results": 0,
+                "error": f"Error processing image: {str(e)}"
+            })
 
     # define langchain tools for model to use
     tools = [
         Tool(
             name = "ProductSearch",
-            func=lambda q: qa_chain.invoke(q),
+            func=lambda q: smart_retriever(q),
             description="Use this to find recommended products from a catalog when the user asks about items"
         ),
         Tool(
@@ -454,63 +451,14 @@ def main():
         )
     ]
 
-    # Create agent prompt template
-    agent_prompt = ChatPromptTemplate.from_template("""
-You are a helpful online store assistant. You have access to tools to help users find products and search for similar items using visual search.
+    # Note: Custom prompt removed - langgraph create_react_agent uses its own prompting system
+    # The guidelines from the original prompt are still relevant for tool descriptions
 
-TOOLS:
-------
-You have access to the following tools:
+    checkpointer = InMemorySaver()
 
-{tools}
+    agent = create_react_agent(llm, tools=tools, prompt=system_prompt, checkpointer=checkpointer)
 
-To use a tool, please use the following format:
-
-```
-Thought: Do I need to use a tool? Yes
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-```
-
-When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
-
-```
-Thought: Do I need to use a tool? No
-Final Answer: [your response here]
-```
-
-Some important guidelines:
-1. List the suggested products conversationally, in order from most to least recommended. Do not mention to the user that there is a two-tier system. If there are no recommended products, say "I couldn't find any products that match your query."
-2. If the user provides an image, use the image search tool to find products similar to the image.
-3. Mention star ratings, sales volume, and why each product is recommended
-4. Highlight the value proposition of each tier (premium quality vs. cost-effective alternatives), but don't specificaly mention the tiers
-5. If the user's request is too vague, feel free to ask for more information. Don't make assumptions about the user's needs. It is better to ask for clarification than to make assumptions. Avoid using the tools until you have a concrete idea of what the user needs.
-6. Do not use any emojis or special characters in your response
-7. The recommended products will be represented in structured data and rendered on a frontend. This means that your response has to be completely conversational, as the user can already see the product information on the UI.
-8. Avoid being overly verbose in your response. Don't say things like "I found some great products for you!". Just say "Here are some products you might like". Be concise and to the point.
-9. Be as objective as possible in your response. Don't say things like "I think this product is great" or "This product is perfect for you". Remember, you are a helpful assistant, not a salesperson.
-10. There is a fine difference between the user asking you to SEARCH for products, and asking you ABOUT products. Note this difference. Don't perform any product searches if the user isn't asking for it.
-
-New input: {input}
-{agent_scratchpad}
-""")
-
-    memory = ConversationBufferMemory(memory_key="chat_history")
-
-    # Create the react agent
-    agent = create_react_agent(llm, tools, agent_prompt, memory=memory)
-    
-    # Create agent executor
-    agent_executor = AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=True,
-        handle_parsing_errors=True,
-        max_iterations=3
-    )
-    
-    return agent_executor
+    return agent
 
 # Global variables for structured API access
 _vectorstore_text = None
@@ -536,14 +484,8 @@ def get_structured_product_recommendations(query: str) -> Dict[str, Any]:
             }
         )
     
-    # Get smart product recommendations
-    smart_docs = two_tier_product_retrieval(
-        _vectorstore_text, 
-        query, 
-        k_bestsellers=8, 
-        k_alternatives=7, 
-        final_count=5
-    )
+    # Simple vector similarity search
+    smart_docs = _vectorstore_text.similarity_search(query, k=8)
     
     # Convert to structured product cards
     product_cards = docs_to_product_cards(smart_docs)
@@ -627,8 +569,8 @@ def get_structured_image_search_results() -> Dict[str, Any]:
         }
 
 if __name__ == "__main__":
-    agent = main()
+    agent = initialize_agent()
     print("Shopping agent initialized successfully!")
     # Example usage:
-    # response = agent.invoke({"input": "What products do you recommend for outdoor activities?"})
-    # print(response["output"])
+    # response = agent.invoke({"messages": [{"role": "user", "content": "What products do you recommend for outdoor activities?"}]})
+    # print(response["messages"][-1].content)

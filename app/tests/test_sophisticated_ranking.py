@@ -190,8 +190,9 @@ def test_full_agent_integration():
             print("=" * 60)
             
             try:
-                result = agent.invoke({"input": query})
-                response = result.get("output", "No response")
+                result = agent.invoke({"messages": [{"role": "user", "content": query}]})
+                messages = result.get("messages", [])
+                response = messages[-1].content if messages else "No response"
                 
                 # Check for smart features in response
                 features_found = []

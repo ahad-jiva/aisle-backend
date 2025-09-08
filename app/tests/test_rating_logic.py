@@ -19,7 +19,7 @@ def test_enhanced_retrieval():
     
     try:
         # Import required modules
-        from app.shopping_agent import enhanced_product_retrieval, LocalSentenceTransformerEmbeddings
+        from app.shopping_agent import two_tier_product_retrieval, LocalSentenceTransformerEmbeddings
         from langchain_milvus import Milvus
         import os
         
@@ -43,8 +43,8 @@ def test_enhanced_retrieval():
         test_query = "wireless headphones"
         print(f"\n Testing enhanced retrieval with query: '{test_query}'")
         
-        # Get enhanced results (10 candidates -> top 5 by rating)
-        enhanced_results = enhanced_product_retrieval(vectorstore, test_query, k_candidates=10, k_final=5)
+        # Get enhanced results using two-tier retrieval system
+        enhanced_results = two_tier_product_retrieval(vectorstore, test_query, k_bestsellers=8, k_alternatives=7, final_count=5)
         
         print(f" Retrieved {len(enhanced_results)} products (top-rated)")
         
@@ -95,8 +95,9 @@ def test_agent_integration():
         test_query = "Show me the best wireless headphones"
         print(f" Testing with query: '{test_query}'")
         
-        result = agent.invoke({"input": test_query})
-        response = result.get("output", "No response")
+        result = agent.invoke({"messages": [{"role": "user", "content": test_query}]})
+        messages = result.get("messages", [])
+        response = messages[-1].content if messages else "No response"
         
         print(f"\n Agent Response:")
         print("=" * 50)
