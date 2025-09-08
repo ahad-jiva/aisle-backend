@@ -1,0 +1,3 @@
+"""
+Shopping Agent Application Package
+"""
