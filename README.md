@@ -78,3 +78,5 @@ Ideally this service could be deployed somewhere for easier use. Should be easy 
 The current Amazon product database is two years out of date. Updating that would be helpful. Also, adding another tool that allowed the LLM access to the web for searching Amazon or other online stores would allow for real-time updated product information (but the take-home project spec said products are limited to a predefined catalog, so I didn't implement this).
 
 With more time and compute, the image database could be a lot bigger. This would improve the image search feature.
+
+Currently, the agent writes out the whole response before sending it to the user. This gives the impression of long loading times. Implementing some kind of streaming where the response is "written out" could improve the user experience.
