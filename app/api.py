@@ -53,22 +53,6 @@ class ChatResponse(BaseModel):
     response: str
     products: List[dict]
 
-# structured product models for frontend cards
-# class ProductCard(BaseModel):
-#     """individual product card for frontend display"""
-#     id: str  # unique identifier
-#     title: str
-#     price: float
-#     rating: float
-#     category: str
-#     image_url: str
-#     product_url: str
-#     is_bestseller: bool
-#     sales_volume: int
-#     tier: str  # "premium" or "value"
-#     tier_label: str  # "premium choice" or "value alternative"
-#     description: Optional[str] = None
-
 
 # api endpoints
 
@@ -244,7 +228,6 @@ async def health_check():
     return {
         "status": "healthy",
         "agent_initialized": agent is not None,
-        "version": "1.0.0"
     }
 
 if __name__ == "__main__":
